@@ -4,6 +4,7 @@ import Capacitor
 @objc(ZeroConfPlugin)
 public class ZeroConfPlugin: CAPPlugin {
     private let implementation = ZeroConf()
+    private let bonBrowser = mCastBrowser()
 
     @objc func getHostname(_ call: CAPPluginCall) {
         let value = implementation.getHostname()
@@ -97,27 +98,13 @@ public class ZeroConfPlugin: CAPPlugin {
             return
         }
 
-        func callback(action: ZeroConfPublisherAction, service: NetService?, error: [String: NSNumber]?) {
-            var actionStr = ""
-            switch action {
-            case .added:
-                actionStr = "added"
-            case .removed:
-                actionStr = "removed"
-            case .resolved:
-                actionStr = "resolved"
-            case .error:
-                call.reject(error?.keys.joined(separator: ", ") ?? "")
-                return
-            }
-            if let unwrappedService: NetService = service {
-                call.resolve(["action": actionStr, "service": jsonifyService(unwrappedService)])
-            }
-        }
+        // Bonjour
+       func bonjourCallback(action: String, service: JSObject?) {
+           call.resolve(["action": action, "service": service])
+       }
 
-        DispatchQueue.main.async {
-            self.implementation.watch(type: type, domain: domain, callback: callback)
-        }
+       self.bonBrowser.scan(typeOf: type, domain: domain, callback: bonjourCallback)
+
     }
 
     @objc func unwatch(_ call: CAPPluginCall) {
